@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+    <style>
+        body { margin:0; display:flex; font-family:Arial; }
+        #sidebar {
+            width:200px; background:#f4f4f4; padding:20px; height:100vh;
+        }
+        #sidebar a { display:block; margin:10px 0; text-decoration:none; }
+        #content { flex:1; padding:20px; }
+        table { border-collapse:collapse; width:100%; }
+        th,td { border:1px solid #ccc; padding:6px; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h3>메뉴</h3>
+        <a href="/">🏠 홈</a>
+        <a href="/leaves">📝 휴가 목록</a>
+        <a href="/leaves/add">➕ 휴가 신청</a>
+        <a href="/users">👤 직원 관리</a>
+    </div>
+
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

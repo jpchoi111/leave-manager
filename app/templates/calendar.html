@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>휴가 캘린더</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <style>
+
+        #calendar {
+            max-width: 900px;
+            margin: 20px auto;
+        }
+
+        .fc-toolbar-title {
+            font-size: 18px;
+        }
+
+        .fc-daygrid-day-number {
+            font-size: 12px;
+        }
+        
+        .fc-event {
+            font-size: 11px;
+            padding: 1px 2px;
+        
+        }
+
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+        #modal-content {
+            background: white;
+            width: 400px;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        #modal-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 4px;
+
+            transition:
+                bacground-color 0.2s ease,
+                transform 0.1s ease;
+        }
+
+        #modal-close:hover {
+            background-color: #eee;
+        }
+
+        #modal-close:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+<h1>📅 휴가 캘린더</h1>
+<div id="calendar"></div>
+
+<!-- 상세 팝업 -->
+<div id="modal">
+    <div id="modal-content">
+        <span id="modal-close" title="닫기">✖</span>
+        <h3 id="modal-title"></h3>
+        <p><b>기간:</b> <span id="modal-date"></span></p>
+        <p><b>상태:</b> <span id="modal-status"></span></p>
+        <p><b>사유:</b> <span id="modal-reason"></span></p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('modal');
+    const closeBtn = document.getElementById('modal-close');
+
+    const calendar = new FullCalendar.Calendar(
+        document.getElementById('calendar'),
+        {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            height: 'auto',
+            hearderToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: ''
+            },
+            events: '/api/leaves',
+
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+
+                document.getElementById('modal-title').innerText =
+                    info.event.title + " 휴가";
+                document.getElementById('modal-date').innerText =
+                    props.start_date + " ~ " + props.end_date;
+                document.getElementById('modal-status').innerText =
+                    props.status;
+                document.getElementById('modal-reason').innerText =
+                    props.reason || "-";
+
+                modal.style.display = "block";
+            }
+        }
+    );
+
+    calendar.render();
+
+    // ✅ 닫기 버튼
+    closeBtn.addEventListener('click', function () {
+        modal.style.display = "none";
+    });
+
+    // ✅ 배경 클릭해도 닫히게 (UX 보너스)
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+  // ✅ ESC 키로 닫기
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script>
+
+<p style="text-align:center;"></p>
+<a href="/">← 홈으로</a>
+
+</body>
+</html>

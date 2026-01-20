@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}직원 추가{% endblock %}
+
+{% block content %}
+<h1>➕ 직원 추가</h1>
+
+<form method="POST">
+    <label>이름:</label>
+    <input type="text" name="name" required>
+    <br><br>
+
+    <label>이메일:</label>
+    <input type="email" name="email" required>
+    <br><br>
+
+    <button type="submit">저장</button>
+</form>
+{% endblock %}

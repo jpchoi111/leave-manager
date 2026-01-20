@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block title %}직원 목록{% endblock %}
+
+{% block content %}
+<h1>👥 직원 목록</h1>
+
+<div style="margin-bottom:15px;">
+    <a href="{{ url_for('main.add_user') }}">➕ 직원 추가</a>
+</div>
+
+<table border="1" cellpadding="5">
+<tr>
+    <th>이름</th>
+    <th>이메일</th>
+    <th>신청 가능 연차</th>
+    <th>남은 연차</th>
+    <th>총 연차</th>
+    <th>연차 입력</th>
+    <th>직원 삭제</th>
+</tr>
+
+{% for user in users %}
+<tr>
+    <td>{{ user.name }}</td>
+    <td>{{ user.email }}</td>
+
+    <!-- 신청 가능 연차 -->
+    <td>
+    {% for year, days in user.requestable_leave_by_year.items() %}
+        {{ year }}년: {{ days }}일 신청 가능<br>
+    {% else %}
+        없음
+    {% endfor %}
+    </td>
+
+    <!-- 남은 연차 -->
+    <td>
+    {% for year, remaining in user.remaining_leave_by_year.items() %}
+        {{ year }}년: {{ remaining }}일<br>
+    {% else %}
+        없음
+    {% endfor %}
+    </td>
+
+    <!-- 총 연차 -->
+    <td>
+    {% for year, total in user.total_leave_by_year.items() %}
+        {{ year }}년: {{ total }}일<br>
+    {% else %}
+        없음
+    {% endfor %}
+    </td>
+
+    <td><a href="{{ url_for('main.add_leave_balance', user_id=user.id) }}">📝 연차 입력</a></td>
+
+    <td>
+        <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}">
+            <button onclick="return confirm('삭제하시겠습니까?')">🗑️ 직원 삭제</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

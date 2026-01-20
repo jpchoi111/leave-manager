@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>휴가 신청</h2>
+
+<form method="post">
+    <input type="hidden" name="view_unit" value="{{ view_unit }}">
+    <select name="user_id">
+        {% for u in users %}
+        <option value="{{ u.id }}">{{ u.name }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="date" name="start_date" required>
+    <input type="date" name="end_date" required>
+
+    <label>
+        <input type="checkbox" name="half_day"> 반차
+    </label>
+
+    <input type="text" name="reason">
+    <button type="submit">신청</button>
+</form>
+
+{% endblock %}

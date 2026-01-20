@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block title %}휴가 목록{% endblock %}
+
+{% block content %}
+<h1>📝 휴가 목록</h1>
+
+<div>
+    <a href="{{ url_for('main.leave_list', view='week') }}">이번 주</a> |
+    <a href="{{ url_for('main.leave_list', view='month') }}">이번 달</a> |
+    <a href="{{ url_for('main.leave_list', view='year') }}">올해</a>
+</div>
+
+<p>보기 단위: {{ view }}</p>
+
+<table>
+<tr>
+    <th>직원</th><th>기간</th><th>일수</th><th>사유</th><th>승인여부</th>
+    <th>신청 가능 연차</th><th>남은 연차 (연도별)</th><th>작업</th>
+</tr>
+{% for leave in leaves %}
+<tr>
+    <td>{{ leave.user.name }}</td>
+    <td>{{ leave.start_date }} ~ {{ leave.end_date }}</td>
+    <td>{{ leave.days }}</td>
+    <td>{{ leave.reason }}</td>
+    <td>
+    {% if leave.status == "Pending" %}
+        <form method="POST" action="{{ url_for('main.approve_leave', leave_id=leave.id) }}" style="display:inline">
+            <button>✅ 승인</button>
+        </form>
+        <form method="POST" action="{{ url_for('main.reject_leave', leave_id=leave.id) }}" style="display:inline">
+            <button>❌ 반려</button>
+        </form>
+    {% else %}
+        {{ leave.status }}
+    {% endif %}
+    </td>
+    <td>
+    {% for year, days in leave.user.requestable_leave_by_year.items() %}
+        {{ year }}년: {{ days }}일 신청 가능<br>
+    {% else %}
+        신청 가능 연차 없음
+    {% endfor %}
+    </td>
+    <td>
+        {% for year, remaining in leave.user.remaining_leave_by_year.items() %}
+            {{ year }}: {{ remaining }}<br>
+        {% endfor %}
+    </td>
+    <td>
+        <a href="/leaves/{{ leave.id }}/edit?view_unit={{ request.args.get('view_unit', 'week') }}">✏️</a>
+        <form method="POST" action="/leaves/{{ leave.id }}/delete" style="display:inline">
+            <input type="hidden" name="view_unit" value="{{ request.args.get('view_unit', 'week') }}">
+            <button onclick="return confirm('삭제?')">🗑️</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
