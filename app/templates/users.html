@@ -15,6 +15,7 @@
     <th>신청 가능 연차</th>
     <th>남은 연차</th>
     <th>총 연차</th>
+    <th>사용 연차</th>
     <th>연차 입력</th>
     <th>직원 삭제</th>
 </tr>
@@ -51,7 +52,19 @@
     {% endfor %}
     </td>
 
-    <td><a href="{{ url_for('main.add_leave_balance', user_id=user.id) }}">📝 연차 입력</a></td>
+    <!-- 총 연차 -->
+    <td>
+    {% for year, used in user.used_leave_by_year.items() %}
+        {{ year }}년: {{ used }}일<br>
+    {% else %}
+        없음
+    {% endfor %}
+    </td>
+
+
+    <td>
+        <a href="{{ url_for('main.add_leave_balance', user_id=user.id) }}">📝 총 연차 입력</a><br>
+    </td>
 
     <td>
         <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}">

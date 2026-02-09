@@ -5,14 +5,24 @@
 <h1>✏️ 휴가 수정</h1>
 
 <form method="POST">
-    <label>직원:</label>
-    <select name="user_id" required>
-        {% for user in users %}
-        <option value="{{ user.id }}" {% if user.id == leave.user_id %}selected{% endif %}>
-            {{ user.name }}
-        </option>
-        {% endfor %}
-    </select>
+
+
+    {% if users %}
+        <label>직원:</label>
+        <select name="user_id" required>
+            {% for user in users %}
+            <option value="{{ user.id }}"
+                {% if user.id == leave.user_id %}selected{% endif %}>
+                {{ user.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <br><br>
+    {% else %}
+        <!-- 일반 사용자는 자기 자신 고정 -->
+        <input type="hidden" name="user_id" value="{{ leave.user_id }}">
+    {% endif %}
+
     <br><br>
 
     <label>시작일:</label>
@@ -25,14 +35,6 @@
 
     <label>사유:</label>
     <input type="text" name="reason" value="{{ leave.reason }}">
-    <br><br>
-
-    <label>상태:</label>
-    <select name="status">
-        <option value="Pending" {% if leave.status == 'Pending' %}selected{% endif %}>Pending</option>
-        <option value="Approved" {% if leave.status == 'Approved' %}selected{% endif %}>Approved</option>
-        <option value="Rejected" {% if leave.status == 'Rejected' %}selected{% endif %}>Rejected</option>
-    </select>
     <br><br>
 
     <button type="submit">저장</button>

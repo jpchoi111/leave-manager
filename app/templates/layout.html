@@ -13,6 +13,12 @@
         #content { flex:1; padding:20px; }
         table { border-collapse:collapse; width:100%; }
         th,td { border:1px solid #ccc; padding:6px; }
+
+        /* flash 메시지 스타일 */
+        .flash-messages { margin-bottom: 20px; }
+        .flash { padding:10px 14px; border-radius:4px; margin-bottom:5px; }
+        .flash.success { background-color:#d4edda; color:#155724; }
+        .flash.danger { background-color:#f8d7da; color:#721c24; }
     </style>
 </head>
 <body>
@@ -22,9 +28,25 @@
         <a href="/leaves">📝 휴가 목록</a>
         <a href="/leaves/add">➕ 휴가 신청</a>
         <a href="/users">👤 직원 관리</a>
-    </div>
 
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.change_password') }}">비밀번호 변경</a>
+        {% endif %}
+
+    </div>
+   
     <div id="content">
+        <!-- 🔔 flash 메시지 출력 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </div>
 </body>

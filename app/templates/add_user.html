@@ -4,6 +4,17 @@
 {% block content %}
 <h1>➕ 직원 추가</h1>
 
+<!-- 플래시 메시지 표시 -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul style="color: red;">
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
 <form method="POST">
     <label>이름:</label>
     <input type="text" name="name" required>
@@ -12,6 +23,15 @@
     <label>이메일:</label>
     <input type="email" name="email" required>
     <br><br>
+
+    <label>역할:</label>
+    <select name="role">
+        <option value="user" selected>직원</option>
+        <option value="admin">관리자</option>
+    </select>
+    <br><br>
+
+    <p>초기 비밀번호는 <strong>12345</strong>이며, 사용자는 로그인 후 반드시 변경해야 합니다.</p>
 
     <button type="submit">저장</button>
 </form>
