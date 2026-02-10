@@ -2,10 +2,13 @@
 from flask import Flask
 from .config import Config
 from .extensions import db, migrate, login_manager
+from datetime import timedelta
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
     # extensions 초기화
     db.init_app(app)

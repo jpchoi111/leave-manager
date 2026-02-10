@@ -27,10 +27,23 @@
         <a href="/">🏠 홈</a>
         <a href="/leaves">📝 휴가 목록</a>
         <a href="/leaves/add">➕ 휴가 신청</a>
-        <a href="/users">👤 직원 관리</a>
+        <a href="/users">👤 계정 관리</a>
 
         {% if current_user.is_authenticated %}
             <a href="{{ url_for('main.change_password') }}">비밀번호 변경</a>
+
+            <form action="{{ url_for('auth.logout') }}" method="post" style="margin-top:10px;">
+                <button type="submit" style="
+                    width:100%;
+                    padding:8px;
+                    background:#eee;
+                    border:1px solid #ccc;
+                    cursor:pointer;
+                ">
+                    🚪 로그아웃
+                </button>
+            </form>
+
         {% endif %}
 
     </div>

@@ -43,13 +43,28 @@ def admin_required(f):
 def index():
     return render_template("index.html")
 
+
+# ------------------- 로그 아웃 -------------------
+@auth_bp.route('/logout', methods=['POST'])
+@login_required
+def logout():
+    logout_user()
+    flash("로그아웃 되었습니다.", "info")
+    return redirect(url_for('auth.login'))
+
+
+
 # ------------------- 직원 목록 -------------------
 @bp.route("/users")
 @login_required
-@admin_required
 def user_list():
-    users = User.query.options(joinedload(User.leave_balances)).all()
-    return render_template("users.html", users=users)
+    if current_user.role == "admin":
+        users = User.query.options(joinedload(User.leave_balances)).all()
+    else:
+        users = [current_user]
+
+    return render_template("users.html", users=users, is_admin=(current_user.role == "admin"))
+
 
 # ------------------- 직원 추가 -------------------
 @bp.route("/users/add", methods=["GET", "POST"])
