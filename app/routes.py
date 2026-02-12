@@ -281,6 +281,12 @@ def add_leave():
             reason=request.form["reason"],
             status="Pending"
         )
+
+        # 날짜 역전 방지
+        if leave.end_date < leave.start_date:
+            flash("종료일은 시작일보다 빠를 수 없습니다.", "danger")
+            return redirect(url_for("main.add_leave"))
+
         used_days = leave.days
         year = leave.start_date.year
         requestable = user.requestable_leave_by_year.get(year, 0)

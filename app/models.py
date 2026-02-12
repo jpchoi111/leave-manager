@@ -2,7 +2,7 @@
 from .extensions import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date
+from datetime import date, timedelta
 
 # ------------------- User -------------------
 class User(db.Model, UserMixin):
@@ -95,7 +95,25 @@ class Leave(db.Model):
 
     @property
     def days(self):
-        return 0.5 if self.half_day else (self.end_date - self.start_date).days + 1
+        # 날짜 역전 방지
+        if self.end_date < self.start_date:
+            return 0
+
+        total_days = 0
+        current = self.start_date
+
+        while current <= self.end_date:
+            # weekday(): 월=0 ~ 일=6 → 0~4만 평일
+            if current.weekday() < 5:
+                total_days += 1
+            current += timedelta(days=1)
+
+        # 반차 처리 (평일이 있을 때만 의미 있음)
+        if self.half_day and total_days > 0:
+            total_days -= 0.5
+
+        return max(total_days, 0)
+
 
     @property
     def pending_days_by_year(self):
