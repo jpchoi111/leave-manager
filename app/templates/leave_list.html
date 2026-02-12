@@ -5,10 +5,27 @@
 <h1>📝 휴가 목록</h1>
 
 <div>
-    <a href="{{ url_for('main.leave_list', view='week') }}">이번 주</a> |
-    <a href="{{ url_for('main.leave_list', view='month') }}">이번 달</a> |
-    <a href="{{ url_for('main.leave_list', view='year') }}">올해</a>
+    <a href="{{ url_for('main.leave_list', view='pending') }}"
+       {% if view == 'pending' %}style="font-weight:bold"{% endif %}>
+       승인대기
+    </a> |
+
+    <a href="{{ url_for('main.leave_list', view='week') }}"
+       {% if view == 'week' %}style="font-weight:bold"{% endif %}>
+       이번 주
+    </a> |
+
+    <a href="{{ url_for('main.leave_list', view='month') }}"
+       {% if view == 'month' %}style="font-weight:bold"{% endif %}>
+       이번 달
+    </a> |
+
+    <a href="{{ url_for('main.leave_list', view='year') }}"
+       {% if view == 'year' %}style="font-weight:bold"{% endif %}>
+       올해
+    </a>
 </div>
+
 
 <p>보기 단위: {{ view }}</p>
 

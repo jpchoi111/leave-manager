@@ -142,8 +142,10 @@ def leave_list():
 
     today = date.today()
 
-    view = request.args.get("view", "month")
-    if view == "week":
+    view = request.args.get("view", "pending")
+    if view == "pending":
+        leaves = leaves.filter(Leave.status == "Pending")
+    elif view == "week":
         start_of_week = today - timedelta(days=today.weekday())
         end_of_week = start_of_week + timedelta(days=6)
         leaves = leaves.filter(Leave.start_date <= end_of_week, Leave.end_date >= start_of_week)
@@ -286,6 +288,25 @@ def add_leave():
         if leave.end_date < leave.start_date:
             flash("종료일은 시작일보다 빠를 수 없습니다.", "danger")
             return redirect(url_for("main.add_leave"))
+
+        # 날짜 중복 체크
+        overlapping_leave = Leave.query.filter(
+            Leave.user_id == user.id,
+            Leave.status != "Rejected",
+            Leave.start_date <= leave.end_date,
+            Leave.end_date >= leave.start_date
+        ).first()
+
+        if overlapping_leave:
+            flash("이미 해당 기간에 신청된 휴가가 있습니다.", "danger")
+            return redirect(url_for("main.add_leave"))
+
+        # 주말 제외 후 0일 방지
+        used_days = leave.days
+        if used_days <= 0:
+            flash("선택한 기간에 사용 가능한 평일이 없습니다.", "danger")
+            return redirect(url_for("main.add_leave"))
+
 
         used_days = leave.days
         year = leave.start_date.year
