@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>✏️ 외출 수정</h1>
+
+<form method="POST">
+  <div>
+    <label>날짜</label>
+    <input type="date" name="date" value="{{ att.date }}" required>
+  </div>
+
+  <div>
+    <label>시작 시간</label>
+    <select name="start_time" required>
+    {% for h in range(9, 18) %}
+        {% for m in [0, 15, 30, 45] %}
+        {% set time_val = "{:02d}:{:02d}".format(h, m) %}
+        <option value="{{ time_val }}" {% if att.start_time.strftime("%H:%M") == time_val %}selected{% endif %}>
+            {{ time_val }}
+        </option>
+        {% endfor %}
+    {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>종료 시간</label>
+    <select name="end_time" required>
+    {% for h in range(9, 18) %}
+        {% for m in [0, 15, 30, 45] %}
+        {% set time_val = "{:02d}:{:02d}".format(h, m) %}
+        <option value="{{ time_val }}" {% if att.end_time.strftime("%H:%M") == time_val %}selected{% endif %}>
+            {{ time_val }}
+        </option>
+        {% endfor %}
+    {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>사유</label>
+    <input type="text" name="reason" value="{{ att.reason }}">
+  </div>
+
+  <button type="submit">수정 저장</button>
+</form>
+
+{% endblock %}

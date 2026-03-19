@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2>📅 휴가 캘린더</h2>
+<h1>📅 휴가 캘린더</h1>
 <div id="calendar" style="max-width:800px;margin:auto;"></div>
 
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
 <script>
@@ -15,9 +15,42 @@ document.addEventListener('DOMContentLoaded', function () {
             initialView: 'dayGridMonth',
             locale: 'ko',
             height: 'auto',
-            events: '/api/leaves'
+            events: '/api/leaves',
+            displayEventTime: false,
+
+            eventDidMount: function(info) {
+
+                console.log("이벤트 렌더됨:", info.event.title);
+
+
+                let props = info.event.extendedProps;
+
+                let tooltipText = `
+구분: ${props.type}
+상태: ${props.status || ''}
+`;
+
+                if (props.period) {
+                    tooltipText += `기간: ${props.period}\n`;
+                }
+
+                if (props.days) {
+                    tooltipText += `일수: ${props.days}일\n`;
+                }
+
+                if (props.duration) {
+                    tooltipText += `시간: ${props.duration}분\n`;
+                }
+
+                if (props.reason) {
+                    tooltipText += `사유: ${props.reason}`;
+                }
+
+                info.el.title = tooltipText;
+            }
         }
     );
+
     calendar.render();
 });
 </script>

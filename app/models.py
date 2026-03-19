@@ -2,7 +2,7 @@
 from .extensions import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 # ------------------- User -------------------
 class User(db.Model, UserMixin):
@@ -152,3 +152,34 @@ class LeaveBalance(db.Model):
     pending_days = db.Column(db.Float, default=0.0)
 
     user = db.relationship("User", back_populates="leave_balances")
+
+# --------------------- Attendance --------------------
+class Attendance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    date = db.Column(db.Date, nullable=False)
+    type = db.Column(db.String(20), nullable=False)
+
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+
+    duration_minutes = db.Column(db.Integer, default=0)
+
+    reason = db.Column(db.String(200))
+    status = db.Column(db.String(20), default="Pending")
+
+    user = db.relationship("User", backref="attendances")
+
+@property
+def duration_minutes(self):
+    if not self.start_time or not self.end_time:
+        return 0
+
+    s = datetime.combine(self.date, self.start_time)
+    e = datetime.combine(self.date, self.end_time)
+
+    if e <= s:
+        return 0
+
+    return int((e - s).total_seconds() // 60)

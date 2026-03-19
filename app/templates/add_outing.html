@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>🏃 외출 신청</h1>
+
+<form method="POST">
+  <div>
+    <label>날짜</label>
+    <input type="date" name="date" required>
+  </div>
+
+  <div>
+    <label>시작 시간</label>
+    <select name="start_time" required>
+      {% for h in range(9, 18) %}
+        {% for m in [0, 15, 30, 45] %}
+          <option value="{{ "%02d:%02d" | format(h, m) }}">
+            {{ "%02d:%02d"|format(h, m) }}
+          </option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>종료 시간</label>
+    <select name="end_time" required>
+      {% for h in range(9, 19) %}
+        {% for m in [0, 15, 30, 45] %}
+          <option value="{{ "%02d:%02d"|format(h, m) }}">
+            {{ "%02d:%02d"|format(h, m) }}
+          </option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>사유</label>
+    <input type="text" name="reason">
+  </div>
+
+  <button type="submit">외출 신청</button>
+</form>
+
+{% endblock %}

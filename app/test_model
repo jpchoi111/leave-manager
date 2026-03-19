@@ -1,0 +1,42 @@
+# app/models.py
+from .extensions import db
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.types import TypeDecorator, String
+from datetime import date, timedelta, datetime, timezone
+
+# ---------------- UTCDateTime ----------------
+class UTCDateTime(TypeDecorator):
+    impl = String
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+
+        if isinstance(value, datetime):
+            if value.tzinfo is not None:
+                value = value.astimezone(timezone.utc)
+            return value.replace(tzinfo=None).isoformat(sep=" ")
+
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+
+        if isinstance(value, datetime):
+            return value.replace(tzinfo=timezone.utc)
+
+        if isinstance(value, bytes):
+            value = value.decode()
+
+        if isinstance(value, str):
+            dt = datetime.fromisoformat(value)
+            return dt.replace(tzinfo=timezone.utc)
+
+        # 숫자는 변환하지 않음 (중요)
+        return None

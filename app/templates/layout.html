@@ -26,7 +26,12 @@
         <h3>메뉴</h3>
         <a href="/">🏠 홈</a>
         <a href="/leaves">📝 휴가 목록</a>
-        <a href="/leaves/add">➕ 휴가 신청</a>
+        <a href="/leaves/add">✈️ 휴가 신청</a>
+        <a href="{{ url_for('main.add_outing') }}">🏃 외출 신청</a>
+        {% if current_user.role == "admin" %}
+            <a href="{{ url_for('main.add_late') }}">⏰ 지각 등록</a>
+        {% endif %}
+        <a href="{{ url_for('main.attendance_list') }}">🚪 근태 목록</a>
         <a href="/users">👤 계정 관리</a>
 
         {% if current_user.is_authenticated %}

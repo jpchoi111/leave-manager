@@ -1,12 +1,11 @@
 # app/routes.py
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from .extensions import db
-from .models import User, Leave, LeaveBalance
+from .models import User, Leave, LeaveBalance, Attendance
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
 from werkzeug.security import check_password_hash
-from datetime import date, datetime
 from sqlalchemy.orm import joinedload
 
 
@@ -477,16 +476,283 @@ def edit_leave(leave_id):
         view_unit=view_unit
     )
 
+@bp.route("/attendance")
+@login_required
+def attendance_list():
+
+    if current_user.role == "admin":
+        attendances = Attendance.query.order_by(Attendance.date.desc()).all()
+    else:
+        attendances = Attendance.query.filter_by(
+            user_id=current_user.id
+        ).order_by(Attendance.date.desc()).all()
+
+    return render_template(
+        "attendance_list.html",
+        attendances=attendances,
+        is_admin=(current_user.role == "admin")
+    )
+
+# ------------------- 지각 등록 -------------------
+@bp.route("/attendance/late/add", methods=["GET", "POST"])
+@login_required
+@admin_required
+def add_late():
+    users = User.query.all()
+    current_date = date.today().isoformat() 
+
+    if request.method == "POST":
+        user_id = int(request.form["user_id"])
+        date_value = datetime.strptime(request.form["date"], "%Y-%m-%d").date()
+        start_time = datetime.strptime(request.form["start_time"], "%H:%M").time()
+        end_time = datetime.strptime(request.form["end_time"], "%H:%M").time()
+
+        duration = int(
+            (datetime.combine(date_value, end_time) -
+             datetime.combine(date_value, start_time)
+            ).total_seconds() // 60
+        )
+
+        attendance = Attendance(
+            user_id=user_id,
+            date=date_value,
+            type="late",
+            start_time=start_time,
+            end_time=end_time,
+            duration_minutes=duration,
+            status="Approved"  # 바로 확정
+        )
+
+        db.session.add(attendance)
+        db.session.commit()
+
+        return redirect(url_for("main.user_list"))
+
+    return render_template("add_late.html", users=users)
+
+# ------------------- 외출 신청 -------------------
+@bp.route("/attendance/outing/add", methods=["GET", "POST"])
+@login_required
+def add_outing():
+    if request.method == "POST":
+        date_value = datetime.strptime(request.form["date"], "%Y-%m-%d").date()
+        start_time = datetime.strptime(request.form["start_time"], "%H:%M").time()
+        end_time = datetime.strptime(request.form["end_time"], "%H:%M").time()
+
+        if start_time.minute % 15 != 0 or end_time.minute % 15 != 0:
+            flash("시간은 15분 단위로 입력해주세요 (00, 15, 30, 45).")
+            return redirect(request.url)
+
+        duration = int(
+            (datetime.combine(date_value, end_time) -
+             datetime.combine(date_value, start_time)
+            ).total_seconds() // 60
+        )
+
+        attendance = Attendance(
+            user_id=current_user.id,
+            date=date_value,
+            type="outing",
+            start_time=start_time,
+            end_time=end_time,
+            duration_minutes=duration,
+            reason=request.form.get("reason"),
+            status="Pending"
+        )
+
+        db.session.add(attendance)
+        db.session.commit()
+
+        return redirect(url_for("main.index"))
+
+    return render_template("add_outing.html")
+
+# ------------------- 외출 승인 -------------------
+@bp.route("/attendance/<int:att_id>/approve", methods=["POST"])
+@login_required
+@admin_required
+def approve_attendance(att_id):
+    att = Attendance.query.get_or_404(att_id)
+
+    if att.status != "Pending":
+        return "이미 처리되었습니다.", 400
+
+    att.status = "Approved"
+    db.session.commit()
+
+    return redirect(url_for("main.index"))
+
+
+# ------------------- 외출 반려 -------------------
+@bp.route("/attendance/<int:att_id>/reject", methods=["POST"])
+@login_required
+@admin_required
+def reject_attendance(att_id):
+    att = Attendance.query.get_or_404(att_id)
+
+    if att.status != "Pending":
+        return "이미 처리되었습니다.", 400
+
+    att.status = "Rejected"
+    db.session.commit()
+
+    return redirect(url_for("main.index"))
+
+
+# ------------------- 외출 수정 -------------------
+@bp.route("/attendance/<int:att_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_outing(att_id):
+    att = Attendance.query.get_or_404(att_id)
+
+    if att.user_id != current_user.id and current_user.role != "admin":
+        abort(403)
+
+    # 상태 체크
+    if att.status != "Pending" and current_user.role != "admin":
+        return "이미 처리된 외출은 수정할 수 없습니다.", 400
+
+    if request.method == "POST":
+        date_value = datetime.strptime(request.form["date"], "%Y-%m-%d").date()
+        start_time = datetime.strptime(request.form["start_time"], "%H:%M").time()
+        end_time = datetime.strptime(request.form["end_time"], "%H:%M").time()
+
+        # ✅ 15분 체크
+        if start_time.minute % 15 != 0 or end_time.minute % 15 != 0:
+            flash("시간은 15분 단위로 입력해주세요.")
+            return redirect(request.url)
+
+        duration = int(
+            (datetime.combine(date_value, end_time) -
+             datetime.combine(date_value, start_time)
+            ).total_seconds() // 60
+        )
+
+        if duration <= 0:
+            flash("종료 시간은 시작 시간보다 이후여야 합니다.")
+            return redirect(request.url)
+
+        # 값 업데이트
+        att.date = date_value
+        att.start_time = start_time
+        att.end_time = end_time
+        att.duration_minutes = duration
+        att.reason = request.form.get("reason")
+
+        db.session.commit()
+
+        return redirect(url_for("main.index"))
+
+    return render_template("edit_outing.html", att=att)
+
+# ------------------- 외출 삭제 -------------------
+@bp.route("/attendance/<int:att_id>/delete", methods=["POST"])
+@login_required
+def delete_outing(att_id):
+    att = Attendance.query.get_or_404(att_id)
+
+    if att.user_id != current_user.id and current_user.role != "admin":
+        abort(403)
+
+    # 상태 체크
+    if att.status != "Pending" and current_user.role != "admin":
+        return "이미 처리된 외출은 수정할 수 없습니다.", 400
+
+    db.session.delete(att)
+    db.session.commit()
+
+    return redirect(url_for("main.index"))
+
+
 # ------------------- 캘린더 API -------------------
 @bp.route("/api/leaves")
 def api_leaves():
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    start_date = datetime.fromisoformat(start).date()
+    end_date = datetime.fromisoformat(end).date()
+
     events = []
-    for leave in Leave.query.all():
+
+    # ---------------- 휴가 ----------------
+    for leave in Leave.query.filter(
+        Leave.end_date >= start_date,
+        Leave.start_date <= end_date
+    ).all():
         color = "#f1c40f" if leave.status == "Pending" else "#2ecc71" if leave.status == "Approved" else "#e74c3c"
+
+        if leave.half_day:
+            label = "반차"
+            icon = "🌓"
+            days = "반차 0.5"
+        else:
+            label = "휴가"
+            icon = "✈️"
+            days = (leave.end_date - leave.start_date).days + 1
+            
         events.append({
-            "title": f"{leave.user.name} ({leave.status})",
+            "title": f"{icon} {leave.user.name}",
             "start": leave.start_date.isoformat(),
             "end": (leave.end_date + timedelta(days=1)).isoformat(),
             "color": color,
+            "allDay": True,
+            "extendedProps": {
+                "type": "휴가",
+                "status": leave.status,
+                "days": days,
+                "period": f"{leave.start_date} ~ {leave.end_date}",
+                "reason": leave.reason
+            }
         })
+
+    # ---------------- 근태 ----------------
+    attendance_list = Attendance.query.all()  # ✅ status 필터 제거
+
+    for att in attendance_list:
+        if att.type == "late":
+            # 🔒 지각: Approved만 + 권한 제한
+            if att.status != "Approved":
+                continue
+
+            if current_user.role != "admin" and att.user_id != current_user.id:
+                continue
+
+            color = "#e67e22"
+            label = "지각"
+
+        elif att.type == "outing":
+            # 👀 외출: Pending 포함 모두 표시
+            label = "외출"
+
+            if att.status == "Pending":
+                color = "#95a5a6"  # 회색 (대기중)
+            elif att.status == "Approved":
+                color = "#3498db"  # 파랑
+            else:
+                color = "#e74c3c"  # 거절 등
+
+        else:
+            continue
+
+        icon_map = {
+            "지각": "⏰",
+            "외출": "🏃",
+        }
+
+        events.append({
+            "title": f"{icon_map.get(label, '')} {att.user.name} - {label}",
+            "start": f"{att.date}",
+            "color": color,
+            "allDay": True,
+            "extendedProps": {
+                "type": label,
+                "status": att.status,
+                "duration": att.duration_minutes,
+                "reason": att.reason
+            }
+        })
+
     return jsonify(events)
+
+

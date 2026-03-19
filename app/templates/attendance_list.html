@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>🚪 근태 목록 </h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>이름</th>
+      <th>구분</th>
+      <th>날짜</th>
+      <th>시간</th>
+      <th>분</th>
+      <th>상태</th>
+      {% if is_admin %}
+      <th>처리</th>
+      {% endif %}
+      <th>관리</th> <!-- ✅ 추가 -->
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for att in attendances %}
+    <tr>
+      <td>{{ att.user.name }}</td>
+      <td>{{ att.type }}</td>
+      <td>{{ att.date }}</td>
+      <td>
+        {{ att.start_time.strftime('%H:%M') }} ~ {{ att.end_time.strftime('%H:%M') }}
+      </td>
+      <td>{{ att.duration_minutes }}분</td>
+      <td>{{ att.status }}</td>
+
+      {% if is_admin and att.status == "Pending" %}
+      <td>
+        <form method="POST" action="{{ url_for('main.approve_attendance', att_id=att.id) }}">
+          <button type="submit">승인</button>
+        </form>
+        <form method="POST" action="{{ url_for('main.reject_attendance', att_id=att.id) }}">
+          <button type="submit">반려</button>
+        </form>
+      </td>
+      {% endif %}
+
+      <!-- ✅ 수정 / 삭제 -->
+      <td>
+
+        {% if (att.user_id == current_user.id and att.status == "Pending") or current_user.role == "admin" %}
+       
+        <div style="display:flex; gap:5px;">
+
+          <!-- 수정 -->
+          <a href="{{ url_for('main.edit_outing', att_id=att.id) }}">
+            <button type="button">수정</button>
+          </a>
+
+          <!-- 삭제 -->
+          <form method="POST"
+                action="{{ url_for('main.delete_outing', att_id=att.id) }}">
+            <button type="submit"
+                    onclick="return confirm('삭제하시겠습니까?')">
+              삭제
+            </button>
+          </form>
+
+        </div>
+
+        {% endif %}
+      </td>
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
