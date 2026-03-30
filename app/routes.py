@@ -331,7 +331,7 @@ def approve_leave(leave_id):
     user = leave.user
     days_to_use = leave.days
 
-    # 🔥 이전 연도 먼저 차감, 사용일수 None 처리
+    # 이전 연도 먼저 차감, 사용일수 None 처리
     balances = (
         LeaveBalance.query
         .filter(LeaveBalance.user_id == user.id, LeaveBalance.year <= leave.start_date.year)
@@ -376,16 +376,16 @@ def reject_leave(leave_id):
 def delete_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
 
-    # ❌ 본인 휴가가 아니고 admin도 아니면 차단
+    # 본인 휴가가 아니고 admin도 아니면 차단
     if current_user.role != "admin" and leave.user_id != current_user.id:
         abort(403)
 
-    # ❌ 일반 유저는 승인된 휴가 삭제 불가
+    # 일반 유저는 승인된 휴가 삭제 불가
     if current_user.role != "admin" and leave.status == "Approved":
         flash("승인된 휴가는 삭제할 수 없습니다.", "danger")
         return redirect(url_for("main.leave_list"))
 
-    # ✅ Approved 상태인 경우만 used_days 복원
+    # Approved 상태인 경우만 used_days 복원
     if leave.status == "Approved":
         balances = (
             LeaveBalance.query

@@ -3,6 +3,7 @@ from .extensions import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, timedelta, datetime
+import secrets
 
 # ------------------- User -------------------
 class User(db.Model, UserMixin):
@@ -183,3 +184,23 @@ def duration_minutes(self):
         return 0
 
     return int((e - s).total_seconds() // 60)
+
+# --------------------- 비밀번호 재설정 --------------------
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_token'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy=True))
+
+    def __init__(self, user_id, expires_in_hours=1):
+        self.user_id = user_id
+        self.token = secrets.token_urlsafe(32)
+        self.expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+
+    def is_valid(self):
+        return datetime.utcnow() < self.expires_at

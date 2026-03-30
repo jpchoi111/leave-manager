@@ -1,11 +1,10 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <title>로그인</title>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}로그인{% endblock %}
+
+{% block content %}
   <h1>🔑 로그인</h1>
+
   <form method="post">
     <label for="email">이메일</label>
     <input type="email" name="email" id="email" required><br>
@@ -15,5 +14,13 @@
 
     <button type="submit">로그인</button>
   </form>
-</body>
-</html>
+
+  <hr>
+
+  <p>
+    비밀번호를 잊으셨나요?
+    <a href="{{ url_for('auth.reset_password_request') }}">
+      비밀번호 재설정
+    </a>
+  </p>
+{% endblock %}
