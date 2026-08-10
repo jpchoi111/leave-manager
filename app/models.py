@@ -124,7 +124,7 @@ class Leave(db.Model):
 
         while current <= self.end_date:
             # weekday(): 월=0 ~ 일=6 → 0~4만 평일
-            if current.weekday() < 5:
+            if current.weekday() < 5 and current not in holidays:
                 total_days += 1
             current += timedelta(days=1)
 
