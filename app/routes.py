@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash
 from datetime import date, datetime, timedelta, time
 from .extensions import db
-from .models import User, Leave, LeaveBalance, Attendance
+from .models import User, Leave, LeaveBalance, Attendance, PublicHoliday
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
 from werkzeug.security import check_password_hash
@@ -19,6 +19,9 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password_hash, password):
+            if not user.is_active:
+                    flash("비활성화된 계정입니다. 관리자에게 문의하세요.", "danger")
+                    return redirect(url_for('auth.login'))
             login_user(user)
             flash("로그인 성공!", "success")
             return redirect(url_for('main.index'))  # 메인 페이지로 이동
@@ -95,12 +98,22 @@ def add_user():
 
 # ------------------- 직원 삭제 -------------------
 @bp.route("/users/delete/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    Leave.query.filter_by(user_id=user.id).delete()
-    LeaveBalance.query.filter_by(user_id=user.id).delete()
-    db.session.delete(user)
+
+    if user.role == "admin":
+        flash("관리자 계정은 삭제할 수 없습니다.", "danger")
+        return redirect(url_for("main.user_list"))
+
+    user.original_email = user.email
+    user.email = f"deleted_{user.id}_{user.email}"
+    user.is_active = False
+    user.deleted_at = datetime.utcnow()
+
     db.session.commit()
+    flash(f"{user.name} 계정이 비활성화되었습니다. 기록은 유지됩니다.", "success")
     return redirect(url_for("main.user_list"))
 
 
@@ -664,6 +677,60 @@ def delete_outing(att_id):
     return redirect(url_for("main.index"))
 
 
+# ------------------- 공휴일 목록 -------------------
+@bp.route("/holidays")
+@login_required
+@admin_required
+def holiday_list():
+    year = request.args.get("year", date.today().year, type=int)
+    holidays = (
+        PublicHoliday.query
+        .filter(db.extract("year", PublicHoliday.date) == year)
+        .order_by(PublicHoliday.date)
+        .all()
+    )
+    return render_template("holiday_list.html", holidays=holidays, year=year, today=date.today())
+
+
+# ------------------- 공휴일 추가 -------------------
+@bp.route("/holidays/add", methods=["GET", "POST"])
+@login_required
+@admin_required
+def add_holiday():
+    if request.method == "POST":
+        holiday_date = datetime.strptime(request.form["date"], "%Y-%m-%d").date()
+        name = request.form["name"].strip()
+
+        existing = PublicHoliday.query.filter_by(date=holiday_date).first()
+        if existing:
+            flash(f"{holiday_date}은 이미 '{existing.name}'으로 등록되어 있습니다.", "warning")
+            return redirect(url_for("main.add_holiday"))
+
+        db.session.add(PublicHoliday(
+            date=holiday_date,
+            name=name,
+            created_by_id=current_user.id
+        ))
+        db.session.commit()
+        flash(f"{name} ({holiday_date})이 등록되었습니다.", "success")
+        return redirect(url_for("main.holiday_list"))
+
+    return render_template("add_holiday.html")
+
+
+# ------------------- 공휴일 삭제 -------------------
+@bp.route("/holidays/<int:holiday_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def delete_holiday(holiday_id):
+    holiday = PublicHoliday.query.get_or_404(holiday_id)
+    name = holiday.name
+    holiday_date = holiday.date
+    db.session.delete(holiday)
+    db.session.commit()
+    flash(f"{name} ({holiday_date})이 삭제되었습니다.", "success")
+    return redirect(url_for("main.holiday_list"))
+
 # ------------------- 캘린더 API -------------------
 @bp.route("/api/leaves")
 def api_leaves():
@@ -750,6 +817,25 @@ def api_leaves():
                 "status": att.status,
                 "duration": att.duration_minutes,
                 "reason": att.reason
+            }
+        })
+
+
+    # ---------------- 공휴일 ----------------
+    for holiday in PublicHoliday.query.filter(
+        PublicHoliday.date >= start_date,
+        PublicHoliday.date <= end_date
+    ).all():
+        events.append({
+            "title": f"🎌 {holiday.name}",
+            "start": holiday.date.isoformat(),
+            "end": (holiday.date + timedelta(days=1)).isoformat(),
+            "color": "#c0392b",
+            "allDay": True,
+            "display": "background",
+            "extendedProps": {
+                "type": "공휴일",
+                "name": holiday.name
             }
         })
 

@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>🎌 공휴일 추가</h1>
+
+<form method="post">
+    <input type="date" name="date" required>
+    <input type="text" name="name" placeholder="공휴일 이름 (예: 광복절)" required>
+    <button type="submit">등록</button>
+    <a href="{{ url_for('main.holiday_list') }}">취소</a>
+</form>
+
+{% endblock %}

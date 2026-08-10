@@ -32,11 +32,11 @@ def create_app():
     login_manager.login_message = "로그인이 필요합니다."  # 선택사항: 로그인 안내 메시지
 
     # blueprint import
-    from .routes import bp as main_bp  # 기존 main routes
-    from .auth import auth_bp          # 우리가 만든 auth.py
+    from .routes import bp as main_bp 
+    from .auth import auth_bp        
 
     # blueprint 등록
     app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix="/auth")  # ← url_prefix 필수
+    app.register_blueprint(auth_bp)  
 
     return app

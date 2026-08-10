@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>🎌 공휴일 관리</h1>
+
+<div>
+    {% for y in range(today.year - 1, today.year + 2) %}
+    <a href="{{ url_for('main.holiday_list', year=y) }}">
+        {{ y }}년 {% if y == year %}✓{% endif %}
+    </a>
+    {% endfor %}
+</div>
+
+<a href="{{ url_for('main.add_holiday') }}">+ 공휴일 추가</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>날짜</th>
+            <th>요일</th>
+            <th>명칭</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% set weekdays = ["월", "화", "수", "목", "금", "토", "일"] %}
+        {% for h in holidays %}
+        <tr>
+            <td>{{ h.date }}</td>
+            <td>{{ weekdays[h.date.weekday()] }}</td>
+            <td>{{ h.name }}</td>
+            <td>
+                <form method="post" action="{{ url_for('main.delete_holiday', holiday_id=h.id) }}"
+                      onsubmit="return confirm('{{ h.name }}을 삭제할까요?')">
+                    <button type="submit">삭제</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not holidays %}
+        <tr>
+            <td colspan="4">등록된 공휴일이 없습니다.</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+{% endblock %}

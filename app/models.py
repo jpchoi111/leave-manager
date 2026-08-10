@@ -12,6 +12,9 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default="user")
+    is_active = db.Column(db.Boolean, default=True, nullable=False, server_default="1")
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    original_email = db.Column(db.String(120), nullable=True)
 
     # 관계 정의
     leaves = db.relationship(
@@ -83,6 +86,15 @@ class User(db.Model, UserMixin):
 
         return result
 
+# --------------------- 공휴일 --------------------
+class PublicHoliday(db.Model):
+    __tablename__ = 'public_holidays'
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
 
 # ------------------- Leave -------------------
 class Leave(db.Model):
@@ -99,6 +111,13 @@ class Leave(db.Model):
         # 날짜 역전 방지
         if self.end_date < self.start_date:
             return 0
+
+        holidays = {
+            h.date for h in PublicHoliday.query.filter(
+                PublicHoliday.date >= self.start_date,
+                PublicHoliday.date <= self.end_date
+            ).all()
+        }
 
         total_days = 0
         current = self.start_date
@@ -204,3 +223,4 @@ class PasswordResetToken(db.Model):
 
     def is_valid(self):
         return datetime.utcnow() < self.expires_at
+
