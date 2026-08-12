@@ -827,7 +827,7 @@ def api_leaves():
         PublicHoliday.date <= end_date
     ).all():
         events.append({
-            "title": f"🎌 {holiday.name}",
+            "title": f"🥂 {holiday.name}",
             "start": holiday.date.isoformat(),
             "end": (holiday.date + timedelta(days=1)).isoformat(),
             "color": "#c0392b",
